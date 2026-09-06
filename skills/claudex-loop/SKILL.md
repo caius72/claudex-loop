@@ -1,247 +1,90 @@
 ---
 name: claudex-loop
-description: Four-phase plan hardening (renamed from /crucible 2026-08-16; old triggers still work) — supersedes /grill-me-codex and /grill-with-docs-codex. PHASE 0 RECON — Claude scouts first (codebase + docs on brownfield; prior art, stack, and pitfalls research on greenfield) and drafts an assumptions ledger. PHASE 1 INTERROGATE — confirm the ledger in one batch, then question only the load-bearing decisions one at a time (each with why-it-matters, a recommendation, and what-breaks-if-we-guess-wrong), cosmetic ones batched, with a visible decision map and an accept-all-recommendations escape hatch. PHASE 2 REVIEW — the locked plan goes to PLAN.md and OpenAI Codex adversarially reviews it in a read-only sandbox (VERDICT: APPROVED/REVISE); Claude revises and re-submits to the SAME Codex session until APPROVED or MAX_ROUNDS, then you sign off before any code. PHASE 3 BUILD (optional) — you pick the builder and the models swap jobs: Codex builds via codex-build and Claude reads the full diff + runs the proof itself; Claude builds and a fresh read-only Codex session cross-inspects the diff (on by default, logged opt-out only); either way you approve the final diff. Use when the user says "/claudex-loop", "claudex this", "run the claudex loop", "/crucible" (legacy), "put this through the crucible", "crucible this plan", "grill me then have codex review", "stress-test this plan before we build", or is about to build something high-stakes (auth, schema, concurrency, migrations, payments, greenfield architecture) and wants alignment AND a cross-model sanity check first. Locked plan needing only the Codex loop → /codex-review. Reviewing already-written code → /codex:review. NOT for trivial changes.
+description: "Harden a plan with independent Claude/Codex review, then optionally build and cross-inspect it. Start in either Claude Code or Codex: the host plans and the other provider reviews. Use for claudex this plan, claudex-loop, or the legacy crucible trigger; not for trivial edits."
 ---
 
-# Claudex-Loop — Recon, Interrogate, Review, Build
+# Claudex Loop
 
-_(Renamed from Crucible 2026-08-16. Old trigger phrases still work.)_
+The current conversation owns requirements, planning and coordination. The other provider reviews the plan. Either provider can build; the provider that did not build inspects the final code in a fresh session.
 
-Four phases, four failure modes killed:
+## Resolve roles once
 
-- **Phase 0 — RECON** kills *interviewing blind*: Claude scouts the terrain (code or research) before asking you anything, so the interview starts informed instead of generic.
-- **Phase 1 — INTERROGATE** kills *building the wrong thing*: Claude interrogates you until intent is locked — but only on decisions that are actually load-bearing.
-- **Phase 2 — REVIEW** kills *a plan that sounds right but breaks*: a different model (Codex) attacks the locked plan. Cross-model = no echo chamber.
-- **Phase 3 — BUILD** *(optional)* kills *grading your own work*: one model implements the locked plan, the rival model grades the diff — in both directions.
+Identify the actual host from your runtime, not PATH, installed skills, model-name guesses, or the repository. Both CLIs may be installed. Use `host=claude` in Claude Code and `host=codex` in Codex. If the runtime identity is unavailable, ask which host the user is using once.
 
-You enter at four points only: confirming the assumptions ledger, answering the fire, signing off the converged plan, and approving the final diff if you build. Codex is read-only throughout recon, interrogation, and review — **no code is written until you sign off the converged plan.**
+| Host | Requirements and plan | Plan reviewer | Default builder | Final inspector |
+|---|---|---|---|---|
+| Claude Code | Current Claude session | Codex | Claude | Fresh Codex session |
+| Codex | Current Codex session | Claude | Codex | Fresh Claude session |
 
----
+Honor `builder=claude|codex`. The inspector is always the other provider. The host remains coordinator even when the other provider builds. To swap the planner, start the conversation in the other host; do not pretend a CLI reviewer is the user's planning conversation.
 
-## PHASE 0 — RECON (Claude alone)
+Model selection is independent of provider roles. Preserve the host's selected model. Review/build CLI calls inherit their own configuration unless `reviewer_model`, `builder_model`, or `inspector_model` is supplied; map these to the runner's `--model` for that invocation. Apply an explicit `*_effort` similarly. Fable 5.1 and GPT-6 Astra are suitable explicit choices, not mandatory pins. A model in the host UI does not prove which model a separate CLI will use. Report requested and observed model information separately; report an unresolved CLI default honestly. Never silently fall back to another model/provider on a failure.
 
-Before asking the user a single question, determine the terrain and gather what can be gathered without them.
+Read [the runtime reference](references/runtime.md) before launching a CLI. Resolve its runner relative to this installed SKILL.md, never relative to the project being reviewed. Use absolute paths when launching it.
 
-### Detect the terrain
-- **Brownfield** — the working directory has real source code (not just scaffolding/config). Recon the codebase.
-- **Greenfield** — empty dir, fresh scaffold, or the user is describing a brand-new project with no repo yet. There is nothing to recon; research replaces it.
+If the user supplies `codex_cli` or `claude_cli`, map the selected provider's executable path to `--cli`. A host app can have a newer working binary than the CLI on PATH; verify the path and version without silently changing global installation or configuration.
 
-### Brownfield recon
-1. Explore the codebase: architecture, relevant modules, existing patterns the plan must fit, current schema/auth/infra as applicable.
-2. Look for living docs: `CONTEXT.md` (or `CONTEXT-MAP.md` for multi-context repos) and `docs/adr/`. If they exist, load them — the project has a ubiquitous language and prior decisions the plan must respect, and Phase 1 runs **docs-aware** (see below).
-3. If the task involves tech or an integration the repo can't answer, open the **research gate** (below) before proceeding.
+## Tunables
 
-### Greenfield recon
-No code to read, so research carries the phase. Open the **research gate**, then cover:
-1. **Prior art** — how do existing tools/products solve this? What's the standard shape?
-2. **Stack** — reasonable default stack for this kind of project, with one alternative worth considering.
-3. **Known pitfalls** — the 3-5 things people building this class of thing get wrong (search for postmortems, "lessons learned", common gotchas of the candidate stack).
+| Argument | Default | Meaning |
+|---|---|---|
+| `PLAN_FILE` / `plan` | `PLAN.md` | Plan path used throughout, including the build handoff |
+| `LOG_FILE` / `log` | `PLAN-REVIEW-LOG.md` | Append-only transcript |
+| `rounds` / `MAX_ROUNDS` | `5` | Maximum completed plan-review rounds |
+| `builder` | host | Provider implementing the plan |
+| `research` | proportionate to task | `none`, `web`, or explicit opt-in `deep` |
+| `mode` | `full` | `full` includes recon/interview; `review` starts from an existing plan |
+| `inspect` | `on` | `off` only when the user explicitly opts out; record it |
+| `MAX_FIX_ROUNDS` | `2` | Bounded build-fix attempts before reporting or taking over |
+| `MAX_INSPECTION_ROUNDS` | `2` | Initial inspection plus one after fixes |
 
-### The research gate (one question, asked at kickoff when external research would help)
-Don't silently pick a research depth — offer the tiers with a recommendation based on stakes, and let the user choose:
+Echo roles, paths, round limits, requested models and inspection opt-out before starting. Preserve existing authorization: a request to plan does not authorize building; a request to plan and implement does. Do authorized preparation before seeking any remaining sign-off.
 
-- **`none`** — Claude's knowledge + codebase only. Right for medium tasks on familiar ground.
-- **`web`** — a handful of targeted WebSearch passes (docs, gotchas, prior art). Minutes, not a project. The default recommendation for most greenfield work.
-- **`deep`** — launch a **deep-research dynamic workflow** via the Workflow tool: a multi-agent research orchestration (parallel finder agents each searching a different way — prior art, stack landscape, pitfalls/postmortems, docs — then deep-read agents on the best sources, then one synthesis agent producing the brief). Heavy and token-expensive — recommend only for high-stakes greenfield, unfamiliar tech, or when the landscape itself is the question. The user choosing this tier IS the explicit opt-in the Workflow tool requires. **Model pin:** every `agent()` call in the research workflow MUST pass `model: 'opus'` (finders, deep-readers, and the synthesizer alike) — if the main session is on Fable, letting a dozen research agents inherit it annihilates token usage for what is mostly search-and-summarize work. Leave effort at the default — don't pass an `effort` override. **Args gotcha (found in smoke test 2026-08-13):** the workflow runtime may deliver `args` as a JSON-encoded STRING instead of an object — always open the script with `const A = typeof args === 'string' ? JSON.parse(args) : args` and reference `A.*`, or `pipeline(args.questions, ...)` dies instantly with "expects an array".
+## Phase 0 — Recon
 
-If invoked with `research=none|web|deep`, skip the question and use that tier.
+For existing projects, inspect relevant code, dependencies, callers and writers of shared state. Read existing `CONTEXT.md` / `CONTEXT-MAP.md` and relevant ADRs. For greenfield work, research prior art, a reasonable stack and concrete failure modes when useful. Respect an explicit research depth. Deep multi-agent research requires explicit opt-in and an available tool; otherwise use supported targeted research, and report the limitation. Do not require a proprietary Workflow tool or hard-code a research-agent model.
 
-**If `deep` is chosen: draft the research prompt and get sign-off before launching.** Show the user the topic framing + the 3-5 specific questions the assumptions ledger needs answered (not a generic "research X" — questions shaped like "what do teams building X get wrong about auth?" / "what's the current standard stack for Y and why?"). The user edits or approves, THEN author the workflow script with the approved questions as its `args` and run it. Save the synthesized brief to `docs/research/YYYY-MM-DD-<slug>-claudex-research.md` (or your notes location of choice, with `## Key Takeaways`) — link it from the ledger entries it sourced and from `PLAN.md`.
+Discover relevant skills through the host's available catalog and the other provider's documented skill locations when accessible. Record only relevant proposed dependencies. Do not assume host MCP, browser, credentials or skills transfer to the other CLI. Verify required build capabilities before relying on them.
 
-### Skill inventory scan (both terrains, after terrain detection)
-Both benches carry installed skill packs. Enumerate and match against the task's domain:
+Present one assumptions ledger with source paths or research links. Ask for corrections to material uncertainties as a batch. Resolve routine reversible choices yourself when the user has authorized the work; silence is not approval of an action requiring approval.
 
-- **Claude side:** list `~/.claude/skills/` (folder names + frontmatter `description` first lines are enough — don't read full SKILL.mds during recon).
-- **Codex side:** list `~/.agents/skills/` (the `skills` CLI's Codex install target).
+## Phase 1 — Settle requirements
 
-Filter to skills whose descriptions match the project's domain (e.g. a three.js game matches the `threejs-*` pack; an email feature matches resend skills). Record hits in the Assumptions Ledger as proposed toolchain entries, never auto-loads:
+Maintain a short visible decision map. Ask only about unresolved decisions that change the outcome. For each consequential question, give the recommendation, why it matters, and the cost of guessing wrong. Batch independent questions; ask dependent ones sequentially. If the code can answer, inspect it instead. Offer “accept all remaining recommendations” when a long decision list would slow the user down.
 
-> "threejs-game-skills pack installed on BOTH agents (9 skills incl. aaa-graphics-builder, gameplay-systems, 3d/image/audio generators) — proposing the build phase load graphics-builder + gameplay-systems, and the asset track use the generator skills. — source: skill inventory scan"
+Respect existing glossary definitions; resolve ambiguous domain language. Maintain glossary-only context lazily using [CONTEXT-FORMAT.md](CONTEXT-FORMAT.md). Record an ADR only for expensive-to-reverse, non-obvious trade-offs using [ADR-FORMAT.md](ADR-FORMAT.md).
 
-If a matched skill exists on only one bench, say which. If a Codex-side skill's loading behavior under headless `codex exec` is unverified, ledger that as an assumption to smoke-test before the build phase counts on it. **Discovery informs the plan; nothing loads unless `PLAN.md`'s `## Toolchain` section names it and survives review.**
+Write the resolved `PLAN_FILE` with:
+- Goal and observable acceptance criteria.
+- Concrete approach, key decisions, trade-offs and non-goals.
+- Confirmed assumptions with sources and remaining risks.
+- Relevant toolchain requirements per provider, if any.
+- Verification: exact proof command(s), expected results, and manual/visual checks when needed.
 
-### Output: the Assumptions Ledger
-End Phase 0 by presenting a single batch — NOT one-at-a-time — of everything Claude resolved on its own:
+Derive proof commands from the repository when possible. Ask only when what counts as success remains unclear. Start the append-only `LOG_FILE` with roles, model requests, scope, authorization and round limits. Keep run diagnostics outside the checkout.
 
-```markdown
-## Assumptions Ledger
-_Confirm or correct in one pass. Anything unmarked I treat as confirmed._
-1. <assumption> — source: <code path / doc / research finding / convention>
-2. ...
-```
+With `mode=review`, load the supplied plan, fill only material gaps with the user as needed, and proceed directly to review; do not restart a requirements interview.
 
-Each entry cites its source. The user confirms/corrects in one reply. Corrections that open real questions get promoted into the Phase 1 decision map.
- This is the single biggest time-save over a naive grill: the interview never wastes questions on things the repo or the research already answered.
+## Phase 2 — Independent plan review
 
----
+Use the shared runner in `review` mode with the actual `--host`, resolved `--plan` and optional model/effort. First round creates a session. Further rounds use `--resume <previous-successful-result.json>` with the same provider/model/effort and a host-authored `--feedback` file containing dispositions. Never use a guessed session id, `--last`, or a build session as a reviewer.
 
-## PHASE 1 — INTERROGATE (you ↔ Claude)
+Each successful response contains a verdict, evidence-backed findings, actual coverage and limitations. Preserve the entire response and runner result path in `LOG_FILE`.
 
-The interview. Rebuilt around one principle: **every question must justify its own existence.**
+- **APPROVED:** no unresolved material defects. Approval is bound to the exact plan path and SHA256. Present remaining low-priority advice and limitations; zero findings is valid and is not proof of exhaustive correctness.
+- **REVISE:** the host arbitrates each finding. Implement warranted plan changes; reject unsupported suggestions with reasons. Record dispositions and send the revised plan to the same reviewer. Avoid relitigating resolved points without new evidence.
+- **BLOCKED / failed process / malformed result:** never count this as approval. Explain the actual missing evidence or operational failure. Do not burn remaining rounds on blind retries or switch providers silently.
 
-### Open with the Decision Map
-Lay out the tree of genuinely open decisions, tiered:
+Stop at `MAX_ROUNDS`. Present unresolved findings and the host's position instead of manufacturing convergence. A changed plan requires another review. Before building, run the approval check on the final plan. If the user explicitly chooses to proceed without independent approval, record that override and use the standalone unreviewed-spec path; never label it approved.
 
-```markdown
-## Decision Map
-### Load-bearing (asked one at a time)
-- [ ] <decision> — irreversible / expensive-if-wrong (schema, auth, data model, concurrency, money, public API)
-### Cosmetic (batched with defaults)
-- [ ] <decision> — cheap to change later
-```
+## Phase 3 — Build and inspect
 
-Load-bearing = wrong answer costs a migration, a rewrite, a security hole, or user trust. Cosmetic = renameable, refactorable, swappable. Update the map as questions resolve (check items off, add branches corrections open) so the user can see convergence instead of wondering how many questions are left.
+Present the reviewed plan, improvements and remaining limits. If implementation is not already authorized, ask for that final decision. Use the selected builder, defaulting to the host. Read [the build reference](references/build.md).
 
-### Load-bearing questions — one at a time, structured
-Every question ships in this format:
+The host can implement directly with its normal tools. For a different builder, use the shared runner's `build` mode. Either path must capture the pre-build commit, preserve unrelated user work, and carry the same resolved plan and verification contract.
 
-> **Q<n>: <the question>**
-> **Why it matters:** <the dependency or constraint that makes this load-bearing>
-> **Recommendation:** <Claude's answer, committed — not a menu>
-> **If we guess wrong:** <the concrete failure — migration, rewrite, breach, churn>
+Run the agreed proof checks, inspect all changed files and review the result through the other provider in a **fresh** `inspect` session. Supply the pre-build commit and builder identity. Reinspection after accepted fixes also uses a fresh session. Log findings and dispositions; rerun affected proof checks after fixes.
 
-Wait for the answer before the next question. If drafting a question and the "if we guess wrong" line comes out weak — the question is cosmetic; demote it to the batch. If mid-interrogation a question turns out answerable from the code or the research, answer it yourself and log it to the ledger instead of asking.
+If the coordinator takes over coding, it has become a builder. Require a fresh other-provider inspection of its changes; never describe the earlier inspection as covering later edits. If both providers contributed code, record authorship and have each inspect the other's changes; do not claim any model independently reviewed code it authored. If the inspection budget is exhausted, report remaining findings and unreviewed edits explicitly for the user's decision.
 
-### Cosmetic decisions — one batch
-Present the whole cosmetic tier as recommendations with a one-line rationale each. The user vetoes by exception; silence = accepted.
-
-### Escape hatch
-At any point the user can say **"accept all remaining recommendations"** — Claude locks every open decision at its recommended answer, logs them as such in the plan, and proceeds. Offer it explicitly if the load-bearing tier exceeds ~8 questions.
-
-### Docs-aware mode (auto-on when Phase 0 found CONTEXT.md/ADRs; offer once on greenfield)
-- **Enforce the glossary** — when the user's wording collides with a `CONTEXT.md` definition, stop and resolve it on the spot: quote the glossary's meaning, state the apparent meaning, make them pick.
-- **Pin down loose words** — an overloaded or vague term gets a proposed canonical replacement before the conversation continues on top of it.
-- **Probe boundaries with scenarios** — when two concepts blur, construct a concrete edge case that forces the line between them to be drawn.
-- **Check claims against the code** — when the user asserts how something behaves, verify in the source; a mismatch is surfaced as a question, not silently trusted either way.
-- **Maintain `CONTEXT.md` as terms settle** (format: [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md)). Glossary ONLY — never implementation details. Created lazily on the first settled term.
-- **Offer ADRs only past the three-part test** — expensive to reverse AND puzzling without context AND a genuine trade-off. Format: [ADR-FORMAT.md](./ADR-FORMAT.md). `docs/adr/` created lazily.
-
-### Lock the plan
-When the decision map is fully checked and you're aligned, **write `PLAN.md`**:
-
-```markdown
-# Plan: <task>
-_Locked via claudex-loop — by Claude + <user>_
-
-## Goal
-<one paragraph — reflects what the interrogation actually settled>
-
-## Approach
-<numbered, concrete steps>
-
-## Key decisions & tradeoffs
-<the contestable choices the interrogation resolved — name them so Codex has something to bite; link any ADRs; mark any locked via the escape hatch>
-
-## Toolchain
-<only when the skill inventory scan matched something — which installed skills each build track MUST load and follow, per agent (Claude / Codex), plus any generator skills or MCP capabilities the build depends on. Omit the section entirely on no matches. Reviewable like everything else: Codex should attack unused relevant skills and unjustified inclusions alike>
-
-## Assumptions
-<the confirmed ledger — with sources>
-
-## Risks / open questions
-<anything still genuinely open>
-
-## Out of scope
-<bounds the interrogation established>
-```
-
-Initialize `PLAN-REVIEW-LOG.md`:
-```markdown
-# Plan Review Log: <task>
-Phases 0-1 (recon + interrogation) complete — plan locked with the user. MAX_ROUNDS=<n>.
-```
-
----
-
-## PHASE 2 — REVIEW (Claude ↔ Codex)
-
-Hand the locked plan to Codex for adversarial review. Mechanics verified end-to-end (2026-06-04) — do not "improve" the invocations below.
-
-### Prerequisites (verify once, fast)
-- `codex --version` ≥ 0.130 (older CLIs error on the default `gpt-5.5` model).
-- Codex authenticated (prior `codex login`; ChatGPT account is fine). On auth/model error, surface it — don't silently retry.
-- Do NOT pin `-m`. Use the config default. Pinning `gpt-5.x-codex` variants 400s on ChatGPT-account auth.
-- **Echo the active model before Round 1** so the user can confirm: read the `model` line from `~/.codex/config.toml` (if absent, report "CLI default"). State it alongside the resolved tunables, e.g. `Reviewer model: CLI default (config unpinned) — codex-cli 0.137.0`. If the user objects, stop and let them adjust config before burning a review round.
-
-### Tunables (read from args, else default)
-| Var | Default | Meaning |
-|-----|---------|---------|
-| `MAX_ROUNDS` | `5` | Hard cap on review rounds. The loop ALWAYS terminates here. |
-| `PLAN_FILE` | `PLAN.md` | The plan Phase 1 produced. |
-| `LOG_FILE` | `PLAN-REVIEW-LOG.md` | Append-only argument transcript. The artifact. |
-| `research` | ask | `none` / `web` / `deep` — pre-answers the Phase 0 research gate. `deep` = the deep-research dynamic workflow (prompt still shown for sign-off first). |
-| `inspect` | `on` | Post-build cross-inspection of Claude-built code by a fresh read-only Codex session. `off` = skip (logged as an explicit opt-out, never silently). |
-| `MAX_INSPECTION_ROUNDS` | `2` | Initial post-build review + one reinspection after accepted fixes. |
-
-If invoked with e.g. `rounds=3`, use that for `MAX_ROUNDS`. Echo resolved values before starting.
-
-### The review prompt (sent each round)
-> You are an adversarial reviewer for an implementation plan. Be skeptical and specific — your job is to find what breaks, not to be agreeable. Read the plan at `PLAN.md` (and `CONTEXT.md`/ADRs for domain language, if present) and any repo files you need (you are read-only). Identify concrete flaws: security holes, race conditions, missing edge cases, schema conflicts, wrong assumptions, observability gaps, simpler alternatives. For each, give a one-line fix. Do NOT modify any files. End your reply with EXACTLY one line: `VERDICT: APPROVED` if the plan is sound enough to implement, or `VERDICT: REVISE` if it still has material problems.
-
-(On greenfield there are no repo files — Codex reviews `PLAN.md` and its `## Assumptions` section on their own merits; the assumption sources give it something concrete to attack.)
-
-### Round 1 — fresh session (capture `thread_id`)
-```bash
-codex exec -s read-only --json -o /tmp/codex-verdict.txt "$(cat REVIEW_PROMPT)" \
-  < /dev/null 2>/dev/null | grep '"type":"thread.started"'
-```
-Parse `thread_id` from the `{"type":"thread.started","thread_id":"..."}` line → that's `THREAD_ID`. The critique is in `/tmp/codex-verdict.txt`. Confirm success by the verdict file + a `thread.started` line; if neither appears, the run failed (auth/model) — stop and tell the user. `2>/dev/null` suppresses cosmetic MCP/auth stderr noise. **`< /dev/null` is mandatory:** `codex exec` reads stdin *in addition to* the prompt arg, so under a non-interactive driver (Claude Code's Bash tool, CI, any non-TTY pipeline) it blocks forever waiting on stdin EOF — a silent ~0% CPU hang. The redirect gives it immediate EOF.
-
-### Rounds 2..MAX — resume the SAME session (Codex remembers its prior critiques)
-```bash
-# resume REJECTS -s. Force read-only via -c sandbox_mode, or Codex inherits
-# config.toml (possibly danger-full-access) and could WRITE files. This is the
-# single most important safety line in the skill — verified 2026-06-04.
-codex exec resume "$THREAD_ID" -c sandbox_mode="read-only" --json \
-  -o /tmp/codex-verdict.txt \
-  "I revised the plan. Re-review PLAN.md — check whether your prior findings are addressed and flag anything new. End with VERDICT: APPROVED or VERDICT: REVISE." \
-  < /dev/null 2>/dev/null >/dev/null
-```
-Both `codex exec` and `codex exec resume` support `--json` and `-o/--output-last-message`. The `< /dev/null` redirect is required on the resume call too — same non-interactive stdin hang as Round 1.
-
-**Timeout guard (both rounds):** run every `codex exec` / `codex exec resume` with a 10-minute ceiling so any future stall fails loud instead of hanging silently. Via Claude Code's Bash tool, pass `timeout: 600000` on the tool call (the default 2-minute tool timeout is too short for real reviews and would kill them mid-run). In a plain shell, prefix the command with `timeout 600` (Linux / Git Bash) or `gtimeout 600` (macOS via coreutils — stock macOS has no `timeout`). If the ceiling trips, treat it as a failed run: stop and tell the user rather than retrying blind.
-
-### Each round, after Codex returns
-1. Read `/tmp/codex-verdict.txt`; append to `LOG_FILE`: `## Round <n> — Codex` + the full critique.
-2. Grep the last line for the verdict:
-   - `VERDICT: APPROVED` → break to Resolution (converged).
-   - `VERDICT: REVISE` → Claude decides **what's actually worth acting on** (Claude is final arbiter — Codex advises, doesn't command). Revise `PLAN_FILE`. Append `### Claude's response` to `LOG_FILE`: what changed, what was rejected, why. Increment round.
-3. If round > `MAX_ROUNDS` → break to Resolution (deadlock).
-
-### Resolution (you sign off — final gate)
-- **APPROVED:** present the final `PLAN_FILE`, a 3-bullet summary of what the loop improved, and the round count. Ask: *"Interrogated + survived N rounds of Codex. Implement it now — Codex builds it (`/codex-build`), Claude builds it, or stop here?"* Code only on a yes.
-- **MAX_ROUNDS hit without APPROVED (deadlock):** do NOT fake convergence. List each unresolved point + Claude's counter-position; hand it to the user to break the tie. A flagged disagreement beats a false "approved."
-
-### PHASE 3 (optional) — BUILD (Codex ↔ Claude, roles flipped)
-
-If the user picks Codex: invoke the `codex-build` skill with `SPEC_FILE=PLAN.md` and the same `LOG_FILE` — it appends `## Act 3 — Build` to the log, so one artifact tells the whole story (reconned → interrogated → reviewed → built → verified). Roles flip: Codex writes the code with full access, Claude reviews the diff and runs the proof. If the user picks Claude, implement directly as usual — then run the **post-build cross-inspection** (below).
-
-### Post-build cross-inspection (default on every Claude-built path)
-
-The doctrine is *whoever made the thing never checks the thing* — that applies to Claude's code too. After Claude implements and the proof gates pass:
-
-1. Launch a **fresh read-only Codex session** (`codex exec -s read-only`, NEW thread — not the Phase 2 thread; the reviewer should see the code cold, not through its own plan critiques). Give it: `PLAN.md`, the base commit, and the code diff. Ask for PR-style findings — correctness, spec fidelity, edge cases, nothing outside scope — no verdict line needed; this is advisory review, not a gate loop.
-2. Claude arbitrates each finding: accept (fix it, rerun affected tests) or reject *with a logged reason*. Cap at `MAX_INSPECTION_ROUNDS=2` (initial review + one reinspection after accepted fixes).
-3. Append to `LOG_FILE` under `## Post-build inspection`: findings verbatim, Claude's dispositions, rounds used. Present the summary alongside the final diff at the human gate.
-
-Opt-out: `inspect=off` at invocation or the user declining at Resolution. Skipping silently is not allowed — the log must show either the inspection or the explicit opt-out. (Cost: one ~2-5 min Codex invocation at the end of the build; forgetting to ask for review is exactly the failure mode this default exists to prevent.)
-
----
-
-## Hard rules
-- Phases run in order: 0 → 1 → 2. Don't write `PLAN.md` until the interrogation has actually resolved the decision map with the user (or they invoked the escape hatch).
-- The assumptions ledger is presented ONCE as a batch — never drip assumptions as individual questions.
-- Codex is read-only EVERY round — `-s read-only` first call, `-c sandbox_mode="read-only"` on every resume (resume has no `-s`). It never writes.
-- The loop ALWAYS terminates at `MAX_ROUNDS`.
-- Claude is final arbiter on every REVISE — incorporate good critiques, reject bad ones *with a logged reason*. Don't cave to everything (defeats the cross-model check) and don't ignore it (defeats the point).
-- Code only after the user's final sign-off.
-- `LOG_FILE` is the deliverable — keep the whole argument.
-- `CONTEXT.md` stays a glossary only — never implementation details.
-
-## What NOT to do
-- Don't invoke this skill just to review pre-existing code — that's `/codex:review`. (Code built BY this skill does get reviewed — that's the post-build cross-inspection, and it's on by default.)
-- Don't pin a `-codex` model variant on ChatGPT-account auth — it 400s.
-- Don't let Codex edit files. Read-only, always.
-- Don't skip Phase 1 — the interrogation is half the value.
-- Don't ask questions the recon already answered, and don't ask a load-bearing-format question whose "if we guess wrong" is weak — demote it to the cosmetic batch.
-- Don't turn Phase 0 into a research project on a medium-stakes task — the research gate exists so the user picks the depth; don't launch the deep-research workflow without an approved prompt.
+Present the final diff, proof results, inspection coverage, unresolved findings, deviations and rounds used. Honor existing commit/push authorization; otherwise leave the concrete diff ready for sign-off. External publication is never implied merely by running the loop.
