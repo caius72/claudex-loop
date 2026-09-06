@@ -1,11 +1,22 @@
 <div align="center">
 <img src="assets/logo.svg" alt="CLAUDEX LOOP" width="719">
 
-### Plan with one model. Review with the other. Start in Claude Code or Codex.
+### Skills for working across Claude Code and Codex.
 
 [![Stars](https://img.shields.io/github/stars/chaseai-yt/claudex-loop?style=flat&color=e8590c)](https://github.com/chaseai-yt/claudex-loop/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 </div>
+
+This repository contains separate skills for choosing a model, making a one-off handoff, and running a complete development workflow. They share a repository and plugin distribution; **Claudex Route is independent of the Claudex Loop workflow**.
+
+| Skill | Use it for | Dependencies |
+|---|---|---|
+| [`claudex-route`](skills/claudex-route/SKILL.md) | A model recommendation or one scoped handoff | Self-contained; selected CLI needed only for delegation |
+| [`claudex-loop`](skills/claudex-loop/SKILL.md) | Requirements, plan review, implementation, and final inspection | Both CLIs and Python 3.10+ |
+| [`codex-review`](skills/codex-review/SKILL.md) | Explicit Codex plan-review compatibility command | Shared `claudex-loop` skill |
+| [`codex-build`](skills/codex-build/SKILL.md) | Explicit Codex builder compatibility command | Shared `claudex-loop` skill |
+
+## Claudex Loop
 
 Claudex Loop gives a plan an independent review before implementation, then gives the code an independent inspection. Your current conversation handles requirements and coordination; the other provider challenges the plan with concrete evidence. The host arbitrates findings, records decisions, and keeps the loop bounded.
 
@@ -18,7 +29,21 @@ Choose either builder with `builder=claude` or `builder=codex`. The inspector fo
 
 Model choices remain configurable. Use **Claude Fable 5.1** and **GPT-6 Astra** when selected and available on your accounts, or retain each CLI's configured model. The host UI selection does not automatically change the other CLI's configuration. Requested and observed model information is recorded separately, and there is no silent model/provider fallback.
 
-## The workflow
+## Claudex Route: standalone task routing
+
+Use [`claudex-route`](skills/claudex-route/SKILL.md) when you want help choosing who should handle a task. It recommends a model and a role with a short reason: stay with the current agent, get a second opinion on a plan or implementation, investigate a blocker, or delegate a bounded task. It can perform one handoff when requested. Recommendations alone do not launch another model or authorize edits.
+
+```text
+claudex-route: Who should handle this CSV import feature? Prioritize cost.
+claudex-route: Recommend a second opinion on this plan before we build.
+claudex-route: Pick a suitable model and have it diagnose this failing test read-only.
+```
+
+For example, Luna may suit a focused fixture-generation task, Terra a bounded implementation, and Astra or Fable a difficult review. These are task-fit recommendations, not a fixed ranking; available models, context, verification, and current pricing matter. Staying with your current model is a valid result. Route is a self-contained instruction skill with no Python dependency; a delegated run requires the selected CLI and account access. It does not use the full loop's approval-binding runner.
+
+Claudex Route runs independently. Use **Claudex Loop** when you want repeated plan review, implementation, and independent inspection.
+
+## The Claudex Loop workflow
 
 ```mermaid
 flowchart LR
@@ -53,11 +78,13 @@ Both CLIs must be installed and authenticated for the full cross-provider workfl
 /plugin install claudex-loop@claudex-loop
 ```
 
-Use `/claudex-loop:claudex-loop`, `/claudex-loop:codex-review`, or `/claudex-loop:codex-build`. Enable marketplace auto-update in the plugin menu if desired.
+Use `/claudex-loop:claudex-route` for a lightweight recommendation or one-off handoff, or `/claudex-loop:claudex-loop`, `/claudex-loop:codex-review`, or `/claudex-loop:codex-build` for the existing workflows. Enable marketplace auto-update in the plugin menu if desired.
 
 ### Codex or manual skill installation
 
-Clone this repository and copy **all three** skill directories together. The compatibility commands share the runtime inside `claudex-loop`; copying an alias alone is insufficient.
+Clone this repository and copy all skill directories together. The compatibility commands share the runtime inside `claudex-loop`; copying an alias alone is insufficient. `claudex-route` can also be installed on its own.
+
+To install **only Claudex Route**, copy `skills/claudex-route/` into `~/.agents/skills/` for Codex or `~/.claude/skills/` for Claude Code. No other skill from this repository is required. The commands below install the complete collection into both hosts.
 
 ```bash
 # macOS / Linux — run from this repository
@@ -73,7 +100,7 @@ Copy-Item -Recurse -Force skills\* "$env:USERPROFILE\.agents\skills\"
 Copy-Item -Recurse -Force skills\* "$env:USERPROFILE\.claude\skills\"
 ```
 
-Open a new session to pick up the skills. In Codex, invoke `$claudex-loop` or say “claudex this plan.” In Claude Code, invoke `/claudex-loop` after manual installation. Updates are `git pull` and re-copy. A `.codex-plugin/plugin.json` is also supplied for Codex plugin packaging; manual skill installation does not require adding a marketplace.
+Open a new session to pick up the skills. In Codex, invoke `$claudex-route` for routing, or `$claudex-loop` for the full workflow. In Claude Code, invoke `/claudex-route` or `/claudex-loop` after manual installation. Updates are `git pull` and re-copy. A `.codex-plugin/plugin.json` is also supplied for Codex plugin packaging; manual skill installation does not require adding a marketplace.
 
 ### Examples
 

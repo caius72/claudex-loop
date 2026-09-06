@@ -1,6 +1,6 @@
 {
   "name": "claudex-loop",
-  "description": "Start in Claude Code or Codex: the host plans, the other provider reviews, either builds, and the other inspects the final code.",
+  "description": "Standalone model routing and one-off handoffs with Claudex Route, plus the full Claudex Loop planning, build and review workflow.",
   "author": {
     "name": "Chase AI",
     "url": "https://youtube.com/@chaseai"
@@ -14,5 +14,5 @@
     "adversarial-review",
     "skills"
   ],
-  "version": "2.0.0"
+  "version": "2.1.0"
 }
