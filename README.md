@@ -129,4 +129,6 @@ This repository was previously `grill-me-codex` and `crucible`; GitHub redirects
 - Codex-as-builder pattern adapted from [Peter Steinberger](https://github.com/steipete/agent-scripts).
 - Claudex Loop, cross-model review and packaging: [Chase AI](https://youtube.com/@chaseai).
 
+Community reports and proposed fixes from [@darian033](https://github.com/darian033), [@ujconsulting](https://github.com/ujconsulting), [@mraol08831](https://github.com/mraol08831), and [@Dwodgaming](https://github.com/Dwodgaming) informed the bidirectional update. [@tura-ai-agent](https://github.com/tura-ai-agent) contributed the pending Chinese/Japanese translations. See [community acknowledgments and PR reconciliation](ACKNOWLEDGMENTS.md) for what was incorporated, adapted, or remains open.
+
 [Claude Code Masterclass and Chase AI+](https://www.skool.com/chase-ai/about) · [MIT license](LICENSE)
