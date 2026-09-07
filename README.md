@@ -7,6 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 </div>
 
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+
+This fork integrates reviewed community proposals against the current shared runner. See [PR and issue dispositions](ACKNOWLEDGMENTS.md) for adaptations and verification.
+
 This repository contains separate skills for choosing a model, making a one-off handoff, and running a complete development workflow. They share a repository and plugin distribution; **Claudex Route is independent of the Claudex Loop workflow**.
 
 | Skill | Use it for | Dependencies |
@@ -74,7 +78,7 @@ Both CLIs must be installed and authenticated for the full cross-provider workfl
 ### Claude Code plugin
 
 ```text
-/plugin marketplace add chaseai-yt/claudex-loop
+/plugin marketplace add caius72/claudex-loop
 /plugin install claudex-loop@claudex-loop
 ```
 
@@ -148,6 +152,8 @@ python -m unittest discover -s tests -v
 
 CI runs on Windows, macOS and Linux. Tests cover host routing, both result formats, resumed-session identity, malformed/empty/failed responses, timeout handling, approval invalidation, complete change manifests, and build resumption. Tests use disposable Git repositories and fake CLI processes, without model quota. Live CLI smoke-test results are recorded in [VALIDATION.md](VALIDATION.md).
 
+When a reviewer is unavailable, the [fallback protocol](skills/claudex-loop/references/fallback.md) preserves completed rounds and offers wait, an explicitly selected text-only reviewer, or an explicitly unreviewed build. The optional API adapter supports named environment profiles and explicit authentication/payment fallback chains. Limited-context approval requires `--allow-limited-review`; it cannot replace final code inspection. A local quota reader reports cached Codex windows without a model call. Fallback tests use a loopback HTTP server, require local socket access, and make no paid requests.
+
 ## History and credits
 
 This repository was previously `grill-me-codex` and `crucible`; GitHub redirects still work. The original skills remain in [legacy/](legacy/). The first reported end-to-end CRM planning run produced 55 findings over five rounds; it is an illustrative run, not a controlled benchmark of model pairings. The next step for measured defaults is comparing single-provider and cross-provider runs on the same acceptance tasks.
@@ -156,6 +162,6 @@ This repository was previously `grill-me-codex` and `crucible`; GitHub redirects
 - Codex-as-builder pattern adapted from [Peter Steinberger](https://github.com/steipete/agent-scripts).
 - Claudex Loop, cross-model review and packaging: [Chase AI](https://youtube.com/@chaseai).
 
-Community reports and proposed fixes from [@darian033](https://github.com/darian033), [@ujconsulting](https://github.com/ujconsulting), [@mraol08831](https://github.com/mraol08831), and [@Dwodgaming](https://github.com/Dwodgaming) informed the bidirectional update. [@tura-ai-agent](https://github.com/tura-ai-agent) contributed the pending Chinese/Japanese translations. See [community acknowledgments and PR reconciliation](ACKNOWLEDGMENTS.md) for what was incorporated, adapted, or remains open.
+Community reports and proposed fixes from [@darian033](https://github.com/darian033), [@ujconsulting](https://github.com/ujconsulting), [@mraol08831](https://github.com/mraol08831), and [@Dwodgaming](https://github.com/Dwodgaming) informed the bidirectional update and this fork's follow-ups. The Chinese/Japanese guides adapt [@tura-ai-agent](https://github.com/tura-ai-agent)'s translation contribution to the current workflow. See [community acknowledgments and PR reconciliation](ACKNOWLEDGMENTS.md) for what was incorporated, adapted, or intentionally omitted.
 
 [Claude Code Masterclass and Chase AI+](https://www.skool.com/chase-ai/about) · [MIT license](LICENSE)

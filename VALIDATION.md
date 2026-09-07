@@ -1,5 +1,15 @@
 # Validation — bidirectional loop
 
+## Community integration, 2026-09-07
+
+Validated on macOS with Python 3.14: metadata/reference validation and **31 tests passed**. The suite retains the 23 existing runner contracts, adds failed version-probe diagnostics and explicit limited-context check/build acceptance, and exercises fallback transport and approval against a real loopback HTTP server plus synthetic quota rollouts. The local sandbox initially denied socket binding; rerunning with local networking enabled passed. No model/API quota was consumed.
+
+New coverage includes normal text-only approval with explicit acceptance, changed-plan invalidation, malformed/contradictory/truncated replies, redirect refusal, explicit auth/payment chains, no switch on 429, unsafe endpoint/missing-key rejection, and stale/malformed quota data. The non-Git review flag is checked on both initial and resumed calls and excluded from builds. Translated README links are part of metadata validation.
+
+The Chinese/Japanese guides were updated and checked against current paths, roles and commands, but have not received independent native-speaker review. No live fallback endpoint compatibility or comparative model-quality claim follows from the local fake endpoint. The historical live tests below were run by upstream, not repeated for this integration.
+
+## Upstream validation record
+
 Development date: 2026-09-06. Tests run in disposable fixtures; production repositories were not built or modified by live smoke tests.
 
 ## Automated checks

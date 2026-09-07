@@ -25,7 +25,7 @@ def validate(root=ROOT):
         except (ValueError, IndexError, AttributeError, yaml.YAMLError) as exc:
             errors.append(f"{path.relative_to(root)}: {exc}")
     # Validate links in active instructions and public README, excluding fenced code.
-    for path in [root / "README.md", *(root / "skills").rglob("*.md")]:
+    for path in [*root.glob("README*.md"), root / "ACKNOWLEDGMENTS.md", *(root / "skills").rglob("*.md")]:
         text = re.sub(r"```.*?```", "", path.read_text(encoding="utf-8"), flags=re.S)
         for link in re.findall(r"\[[^\]]*\]\(([^)]+)\)", text):
             if re.match(r"[a-z]+://|#", link):

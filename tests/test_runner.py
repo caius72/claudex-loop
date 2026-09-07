@@ -148,6 +148,34 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('sandbox_mode="read-only"', args)
         self.assertNotIn("-s", args)
         self.assertNotIn("--last", args)
+        self.assertIn("--skip-git-repo-check", args)
+        self.assertIn("--skip-git-repo-check", runner.command("codex", "review", self.root))
+        self.assertNotIn("--skip-git-repo-check", runner.command("codex", "build", self.root))
+
+    def test_failed_version_probe_keeps_exit_code_and_diagnostics(self):
+        self.cli.write_text("import sys\nprint('OS blocked executable', file=sys.stderr)\nsys.exit(137)\n")
+        code, record, path, _ = self.invoke()
+        self.assertEqual(code, 1)
+        self.assertEqual(record["version_exit_code"], 137)
+        self.assertIn("137", record["error"])
+        self.assertIn("OS blocked executable", (path.parent / "version-stderr.txt").read_text())
+
+    def test_limited_approval_check_and_build_require_explicit_acceptance(self):
+        _, record, path, _ = self.invoke()
+        record["mode"] = "fallback-review"
+        record["response"]["limitations"] = ["No repository access"]
+        runner.save(path, record)
+        for mode in ("check", "build"):
+            extra = ("--approval", str(path), "--proof", "python -m unittest")
+            code, _, _, error = self.invoke(mode=mode, case="build", extra=extra)
+            self.assertEqual(code, 1)
+            self.assertIn("--allow-limited-review", error)
+            code, result, _, error = self.invoke(mode=mode, case="build",
+                                                extra=extra+("--allow-limited-review",))
+            self.assertEqual(code, 0, (result, error))
+        for malformed in ([], {"status": "completed", "mode": "review", "response": []}):
+            with self.assertRaises(runner.RunError):
+                runner.check_approval(malformed, self.plan, self.repo)
 
     def test_failures_never_approve_and_keep_diagnostics(self):
         for host in ("claude", "codex"):
