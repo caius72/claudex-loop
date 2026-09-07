@@ -5,7 +5,7 @@
     "name": "Chase AI",
     "url": "https://youtube.com/@chaseai"
   },
-  "homepage": "https://github.com/chaseai-yt/claudex-loop",
+  "homepage": "https://github.com/caius72/claudex-loop",
   "license": "MIT",
   "keywords": [
     "planning",
@@ -14,5 +14,5 @@
     "adversarial-review",
     "skills"
   ],
-  "version": "2.1.0"
+  "version": "2.2.0"
 }

@@ -25,6 +25,8 @@ Use `--resume PREVIOUS_BUILD_RESULT --feedback FIX_LIST` for fixes. The clean-ch
 
 Read all changes relative to the pre-build commit, including staged changes, deletions, binary assets and untracked files. For changed tests, check that assertions express the acceptance criteria or valid regressions rather than merely confirming whatever the implementation happens to do. Existing necessary regression tests need not correspond to a new spec sentence. Run the agreed proof commands yourself, and add relevant manual/visual verification when the deliverable calls for it.
 
+Treat builder self-QA and "Deviations: None" as claims to verify. Compare the diff against the work order, record any impossible requirement the builder resolved differently, and decide explicitly whether the plan or implementation needs correction. List each added test's acceptance criterion or regression scenario.
+
 ```text
 python RUNNER inspect --host claude --builder codex --repo PROJECT --plan PLAN_PATH --base BASE_COMMIT
 python RUNNER inspect --host codex --builder claude --repo PROJECT --plan PLAN_PATH --base BASE_COMMIT

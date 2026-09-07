@@ -17,6 +17,8 @@ For an explicit model choice, add e.g. `--model gpt-6-astra --effort high` to a 
 
 If PATH resolves to an older CLI than the host app uses, pass `--cli ABSOLUTE_EXECUTABLE_PATH` after verifying that binary's version. Do not guess an app installation path or silently rewrite global PATH. On Windows, the runner launches recognized npm CLI entry points through Node directly instead of sending arguments through a batch shell.
 
+If `--version` produces no output and exits with SIGKILL (`-9` in Python, often `137` in a shell), stop retrying that executable. The runner retains the probe's exit code and `version-stdout.txt` / `version-stderr.txt`. On macOS, an OS-blocked or stale PATH binary is one possible cause; inspect `type -a codex` and verify an alternative installation before supplying `--cli`. This symptom alone does not prove malware, revocation, or the end of standalone CLI support. Preserve `~/.codex/`, which contains live authentication, settings and sessions.
+
 Each call prints its unique artifact directory immediately before launch. It contains `prompt.txt`, `command.json`, `stdout.txt`, `stderr.txt` and `result.json`. Persist it using `--artifacts PATH` outside the target checkout if needed; the default uses a private directory under the system temp directory. Do not use a shared fixed verdict filename. Do not commit diagnostics: they may include private code or plans.
 
 After completion, read `result.json`; inspect diagnostics on failure. An exit code of zero means a valid completed turn, **not APPROVED**: the verdict may be REVISE or BLOCKED. Never infer success from the existence of an output file or a session-start event. Do not reuse the last successful result after a failed newer round.
@@ -43,6 +45,10 @@ The default timeout is 600 seconds. Use a host tool's nonblocking/background sup
 Validation rejects empty/malformed output, duplicate finding IDs, unsupported severity, material findings paired with APPROVED, missing coverage, and incomplete CLI turns. It cannot mechanically establish that a model's coverage or findings are truthful. Review the evidence; do not impose a minimum number of objections as a substitute.
 
 Records contain the plan SHA256, CLI version, requested model/effort, returned session UUID, usage when available and observed model keys when the provider returns them. Unknown model identity remains unknown. There is no silent model fallback or automatic provider switch.
+
+When the selected reviewer is unavailable, follow [wait/switch/skip](fallback.md). The optional API fallback and cached Codex quota reader live beside the runner and ship with the installed skill.
+
+Do not broadly allowlist a shell prefix around the runner. Approval of a wrapper prefix does not establish approval of chained commands, substitutions or later flag overrides. Invoke it as an argument list through the host's normal permission controls; never suppress diagnostics or add sandbox overrides to work around a failed review.
 
 ## Compatibility
 

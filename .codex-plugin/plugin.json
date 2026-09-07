@@ -5,7 +5,7 @@
     "name": "Chase AI",
     "url": "https://youtube.com/@chaseai"
   },
-  "homepage": "https://github.com/chaseai-yt/claudex-loop",
+  "homepage": "https://github.com/caius72/claudex-loop",
   "license": "MIT",
   "keywords": [
     "planning",
@@ -14,9 +14,9 @@
     "adversarial-review",
     "skills"
   ],
-  "version": "2.1.0",
+  "version": "2.2.0",
   "skills": "./skills/",
-  "repository": "https://github.com/chaseai-yt/claudex-loop",
+  "repository": "https://github.com/caius72/claudex-loop",
   "interface": {
     "displayName": "Claudex Loop",
     "shortDescription": "Route tasks, plan, build and review across models",
@@ -28,7 +28,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/chaseai-yt/claudex-loop",
+    "websiteURL": "https://github.com/caius72/claudex-loop",
     "defaultPrompt": [
       "Use claudex-loop to harden this plan with independent review."
     ]

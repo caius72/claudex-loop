@@ -75,6 +75,10 @@ Each successful response contains a verdict, evidence-backed findings, actual co
 - **REVISE:** the host arbitrates each finding. Implement warranted plan changes; reject unsupported suggestions with reasons. Record dispositions and send the revised plan to the same reviewer. Avoid relitigating resolved points without new evidence.
 - **BLOCKED / failed process / malformed result:** never count this as approval. Explain the actual missing evidence or operational failure. Do not burn remaining rounds on blind retries or switch providers silently.
 
+For quota, authentication or service failures, use [the fallback protocol](references/fallback.md): preserve previous rounds, offer wait/switch/skip, and continue only within the user's choice. A selected fallback sees only the supplied plan/history; disclose the endpoint, model and reduced coverage before transmitting. Its approval requires explicit `--allow-limited-review` acceptance for checking/building and never substitutes for final code inspection.
+
+Across rounds, retain the reviewer's inventory of shared-resource writers and files actually opened. Report discovered but unopened writers as residual risk on every outcome, including APPROVED. Verify guarantees claimed in code comments against implementation; an unfixed sibling is a finding only when evidence supports it.
+
 Stop at `MAX_ROUNDS`. Present unresolved findings and the host's position instead of manufacturing convergence. A changed plan requires another review. Before building, run the approval check on the final plan. If the user explicitly chooses to proceed without independent approval, record that override and use the standalone unreviewed-spec path; never label it approved.
 
 ## Phase 3 — Build and inspect
