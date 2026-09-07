@@ -6,6 +6,8 @@ Validated on macOS with Python 3.14: metadata/reference validation and **31 test
 
 New coverage includes normal text-only approval with explicit acceptance, changed-plan invalidation, malformed/contradictory/truncated replies, redirect refusal, explicit auth/payment chains, no switch on 429, unsafe endpoint/missing-key rejection, and stale/malformed quota data. The non-Git review flag is checked on both initial and resumed calls and excluded from builds. Translated README links are part of metadata validation.
 
+The first Python 3.10 CI run exposed an overly specific test assertion: urllib rejects HTTP 308 through a different exception path than Python 3.14, while both refuse the redirect. The test now checks the required behavior (failed review and no forwarded request), not version-dependent error wording. Malformed HTTP status lines also produce a durable failed result.
+
 The Chinese/Japanese guides were updated and checked against current paths, roles and commands, but have not received independent native-speaker review. No live fallback endpoint compatibility or comparative model-quality claim follows from the local fake endpoint. The historical live tests below were run by upstream, not repeated for this integration.
 
 ## Upstream validation record

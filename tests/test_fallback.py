@@ -41,6 +41,9 @@ class FallbackTests(unittest.TestCase):
 
             def do_POST(self):
                 owner.calls.append((self.path, json.loads(self.rfile.read(int(self.headers["Content-Length"])))))
+                if owner.case == "bad_status":
+                    self.connection.sendall(b"invalid HTTP status\r\n\r\n")
+                    return
                 if self.path.startswith("/unavailable/"):
                     self.send_response(402)
                     self.end_headers()
@@ -109,7 +112,7 @@ class FallbackTests(unittest.TestCase):
             check_approval(record, self.plan, self.repo, allow_limited=True)
 
     def test_invalid_truncated_and_changed_plan_results_never_approve(self):
-        for self.case in ("bare", "material", "truncated", "shape", "mutate"):
+        for self.case in ("bare", "material", "truncated", "shape", "bad_status", "mutate"):
             with self.subTest(case=self.case):
                 code, record = self.invoke()
                 self.assertEqual(code, 1, record)
@@ -124,7 +127,6 @@ class FallbackTests(unittest.TestCase):
                 code, record = self.invoke()
                 self.assertEqual(code, 1, record)
                 self.assertEqual(len(self.calls), 1)
-                self.assertIn("redirected", record["error"])
 
     def test_only_explicit_chain_advances_on_auth_or_payment_rejection(self):
         code, record = self.invoke("--chain", "down,local")

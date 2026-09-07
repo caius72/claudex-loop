@@ -7,6 +7,7 @@ No tools, automatic provider selection, or extra runtime dependencies.
 from __future__ import annotations
 
 import argparse
+from http.client import HTTPException
 import json
 import os
 from pathlib import Path
@@ -132,7 +133,7 @@ def run(args):
                 continue
             record["error"] = f"HTTP {exc.code}; no automatic retry/switch. 429 alone does not prove quota exhaustion."
             break
-        except (RunError, OSError, ValueError) as exc:
+        except (RunError, OSError, ValueError, HTTPException) as exc:
             # Transport errors can include a server-supplied reason. Keep the public
             # diagnostic bounded to its type; never print response bodies or keys.
             attempt["error"] = str(exc) if isinstance(exc, RunError) else type(exc).__name__
