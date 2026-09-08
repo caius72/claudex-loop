@@ -4,8 +4,11 @@ Reviewed on 2026-09-07 against upstream `8cf5e2c` (the bidirectional runner from
 
 ## Pull requests
 
+Follow-up on 2026-09-09: integrated PR #18 at `f765ab25`, preserving the earlier adaptations below. Model-default guidance was also corrected across the active skill and English, Chinese and Japanese guides.
+
 | Upstream PR and reviewed head | Contributor | Disposition in this fork |
 |---|---|---|
+| [#18: Git index fingerprint and Codex reviewer isolation](https://github.com/chaseai-yt/claudex-loop/pull/18), `f765ab25` | [Brian Busch / @buschbrian](https://github.com/buschbrian) | Integrated the index-aware snapshot, divergent-index inspection gate, Codex review/inspection configuration isolation and disabled web search, with five regression tests. Builds keep normal configuration. Codex review model/effort choices must be supplied explicitly to override built-in defaults. |
 | [#6: Chinese/Japanese guides](https://github.com/chaseai-yt/claudex-loop/pull/6), `0038e087` | [@tura-ai-agent](https://github.com/tura-ai-agent) | Adapted into [Chinese](README.zh-CN.md) and [Japanese](README.ja.md) guides covering both hosts, Route, current installation, model/executable overrides, approval limits and fallback. They are labeled concise guides rather than verbatim translations. Removed the old unrestricted-build instructions and obsolete skill names from active usage. Local links are validated. |
 | [#9: fallback and quota](https://github.com/chaseai-yt/claudex-loop/pull/9), `76fd039b` | [Uwe Jörk / @ujconsulting](https://github.com/ujconsulting) | Adapted the text-only endpoint/profile approach and local quota reader into scripts shipped with the installed skill. [The protocol](skills/claudex-loop/references/fallback.md) supports wait/switch/skip, explicit profiles/chains, retained history, and plan-bound approval with explicit limited-context acceptance. See the review findings below for changes to the proposal. |
 | [#11: YAML quoting](https://github.com/chaseai-yt/claudex-loop/pull/11), `e73d9d66` | [@darian033](https://github.com/darian033) | Already implemented by #16: all four current skills have valid quoted descriptions and pass the actual YAML parser in `scripts/validate.py`. Reapplying the old descriptions would undo newer work. |

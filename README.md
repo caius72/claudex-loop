@@ -31,7 +31,7 @@ Claudex Loop gives a plan an independent review before implementation, then give
 
 Choose either builder with `builder=claude` or `builder=codex`. The inspector follows the builder choice and always uses the other provider. If the coordinator takes over fixes, those new edits need another independent inspection. With mixed authorship, the log records who wrote and reviewed each part.
 
-Model choices remain configurable. Use **Claude Fable 5.1** and **GPT-6 Astra** when selected and available on your accounts, or retain each CLI's configured model. The host UI selection does not automatically change the other CLI's configuration. Requested and observed model information is recorded separately, and there is no silent model/provider fallback.
+Model choices remain configurable. Use **Claude Fable 5.1** and **GPT-6 Astra** when selected and available on your accounts. Codex reviews and inspections ignore user configuration: pass model and effort explicitly to preserve a specific choice; omitted values use the CLI's built-in defaults. Builds and Claude calls retain their normal configuration. The host UI selection does not automatically change the other CLI's configuration. Requested and observed model information is recorded separately, and there is no silent model/provider fallback.
 
 ## Claudex Route: standalone task routing
 
@@ -125,8 +125,8 @@ The third example starts in Claude Code; the fourth starts in Codex. The host se
 | `plan` / `PLAN_FILE` | `PLAN.md` | Plan path, carried through every phase |
 | `log` / `LOG_FILE` | `PLAN-REVIEW-LOG.md` | Append-only decision log |
 | `builder` | current host | `claude` or `codex` |
-| `reviewer_model`, `builder_model`, `inspector_model` | each CLI's configuration | Explicit per-role model override |
-| `reviewer_effort`, `builder_effort`, `inspector_effort` | each CLI's configuration | Explicit supported reasoning effort |
+| `reviewer_model`, `builder_model`, `inspector_model` | CLI default; see model selection above | Explicit per-role model override |
+| `reviewer_effort`, `builder_effort`, `inspector_effort` | CLI default; see model selection above | Explicit supported reasoning effort |
 | `rounds` / `MAX_ROUNDS` | `5` | Completed plan-review round cap |
 | `MAX_FIX_ROUNDS` | `2` | Build-fix attempt cap |
 | `MAX_INSPECTION_ROUNDS` | `2` | Initial inspection plus one reinspection |
@@ -140,7 +140,9 @@ The runner validates a successful CLI turn and a structured review; an empty out
 
 A clean structured result does not prove the model is right. The log preserves coverage, limitations and concrete evidence. Zero findings is valid; a large number of findings is not a quality score. `BLOCKED`, execution failures and exhausted round budgets are surfaced rather than converted to approval.
 
-Codex reviews use the read-only shell sandbox. Claude reviews expose only file reading/search, with customizations disabled and no MCP tools. These boundaries differ: see [runtime details](skills/claudex-loop/references/runtime.md), especially existing Codex MCP configuration. Builders use bounded permissions, and delegated builds require a clean checkout. A worktree preserves unrelated work; it is not itself a security sandbox.
+The inspected fingerprint covers the Git index as well as the working tree: staged blob ids and the staged diff are recorded, so staged content that the working tree no longer shows still changes the fingerprint. An inspection refuses to start when staged changes differ from the working-tree content, because the eventual commit would then contain content the inspector never saw. Stage the intended version or unstage those changes first; do not stage unrelated work to get past the gate. Ordinary unstaged edits remain supported. Staging after inspection changes the fingerprint and requires another inspection.
+
+Codex reviews use the read-only shell sandbox and ignore the user's `config.toml`, so configured MCP servers, plugins and hooks do not reach the reviewer. Claude reviews expose only file reading/search, with customizations disabled and no MCP tools. These boundaries differ: see [runtime details](skills/claudex-loop/references/runtime.md). Builders use bounded permissions, and delegated builds require a clean checkout. A worktree preserves unrelated work; it is not itself a security sandbox.
 
 ## Development and verification
 
