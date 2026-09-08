@@ -1,5 +1,15 @@
 # Validation — bidirectional loop
 
+## PR #18 integration, 2026-09-09
+
+Integrated upstream PR #18 at `f765ab25` on this fork. On macOS with Python 3.14, **36 tests passed**, `scripts/validate.py` passed with the existing PyYAML development dependency in a temporary virtual environment, and `git diff --check` passed.
+
+Before applying the runtime fix, `test_inspection_refuses_divergent_index` failed because inspection accepted a staged change hidden by restored working-tree content. It passes after the fix. The five imported tests cover hidden staged content, staged deletion/addition, staging-only fingerprint changes, refusal of divergent staged changes, and Codex configuration isolation flags for fresh/resumed calls while preserving build configuration. Existing tests cover the shared build-resumption and inspection-invalidation paths.
+
+The integration also corrects model/effort defaults and inspection guidance across the active skill and English, Chinese and Japanese guides. Codex reviews skip user configuration, so specific model/effort choices require explicit arguments. Stage intended content before inspection: later staging changes the fingerprint even when working-tree bytes remain identical.
+
+No live model calls were made for this integration. The contributor's live Codex tool-inventory probe in PR #18 was not repeated locally; fake CLI tests verify argument construction, not the external CLI's enforcement. Translated guidance has not had independent native-speaker review.
+
 ## Community integration, 2026-09-07
 
 Validated on macOS with Python 3.14: metadata/reference validation and **31 tests passed**. The suite retains the 23 existing runner contracts, adds failed version-probe diagnostics and explicit limited-context check/build acceptance, and exercises fallback transport and approval against a real loopback HTTP server plus synthetic quota rollouts. The local sandbox initially denied socket binding; rerunning with local networking enabled passed. No model/API quota was consumed.
@@ -51,5 +61,5 @@ The fixture checks exercise transport and obvious-defect detection, not comparat
 
 - Live review tests were run on Windows. Automated fake-CLI coverage is configured for all three operating systems.
 - CLI versions, account access and permission behavior can change; diagnostics identify the selected executable and requested model.
-- Codex's shell sandbox does not constrain external MCP side effects; review existing tool configuration as described in the runtime reference. Claude's adapter instead removes non-reading tools and MCP from the reviewer.
+- Codex's shell sandbox does not constrain external MCP side effects. The PR #18 integration now ignores user configuration and disables web search for Codex reviews; see the runtime reference. Claude's adapter removes non-reading tools and MCP from the reviewer.
 - Structured-output validation can reject broken transport and inconsistent verdicts, but cannot prove a model's findings or claimed coverage.

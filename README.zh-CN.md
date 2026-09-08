@@ -26,7 +26,7 @@
 
 通过 `builder=claude` 或 `builder=codex` 选择实现者。检查者始终来自另一个提供商。协调者接手修改后，新改动需要重新接受独立检查；两方都写过代码时，应记录各自的贡献和审查范围。
 
-模型可以配置。明确选择且账户可用时，可以使用 Claude Fable 5.1 或 GPT-6 Astra；也可以保留各 CLI 的配置。宿主界面选择的模型不会自动改变另一个 CLI。运行记录区分请求的模型和实际观测到的模型，不会在失败后悄悄换模型或提供商。
+模型可以配置。明确选择且账户可用时，可以使用 Claude Fable 5.1 或 GPT-6 Astra。Codex 的计划审查和最终检查忽略用户配置；若要使用特定模型和推理强度，必须明确指定，否则使用 CLI 内置默认值。实现及 Claude 调用保留正常配置。宿主界面选择的模型不会自动改变另一个 CLI。运行记录区分请求的模型和实际观测到的模型，不会在失败后悄悄换模型或提供商。
 
 1. **调研：**查看代码、调用者、共享状态的写入者及相关文档，列出假设和来源。
 2. **明确需求：**解决会影响结果的关键问题，将方案、验收标准和验证命令写入计划。
@@ -87,8 +87,8 @@ claudex this feature, builder=claude, reviewer_model=claude-fable-5-1
 | `plan` / `PLAN_FILE` | `PLAN.md` | 所有阶段使用的计划路径 |
 | `log` / `LOG_FILE` | `PLAN-REVIEW-LOG.md` | 只追加的决策记录 |
 | `builder` | 当前宿主 | `claude` 或 `codex` |
-| `reviewer_model` / `builder_model` / `inspector_model` | 各 CLI 配置 | 为各角色指定模型 |
-| `reviewer_effort` / `builder_effort` / `inspector_effort` | 各 CLI 配置 | 指定支持的推理强度 |
+| `reviewer_model` / `builder_model` / `inspector_model` | CLI 默认值，见上方模型说明 | 为各角色指定模型 |
+| `reviewer_effort` / `builder_effort` / `inspector_effort` | CLI 默认值，见上方模型说明 | 指定支持的推理强度 |
 | `rounds` / `MAX_ROUNDS` | `5` | 完成的计划审查轮次上限 |
 | `MAX_FIX_ROUNDS` | `2` | 实现修复轮次上限 |
 | `MAX_INSPECTION_ROUNDS` | `2` | 首次检查加一次复查 |
@@ -98,9 +98,9 @@ claudex this feature, builder=claude, reviewer_model=claude-fable-5-1
 
 ## 批准、边界与服务中断
 
-批准绑定计划的绝对路径与 SHA256；修改计划会使批准失效。最终检查还绑定实现前的提交及完整变更指纹，包括暂存和未跟踪文件。检查期间或之后有新改动时，需要重新检查。
+批准绑定计划的绝对路径与 SHA256；修改计划会使批准失效。最终检查还绑定实现前的提交及完整变更指纹，包括暂存和未跟踪文件。检查期间或之后有新改动时，需要重新检查。暂存变更与工作树内容不一致时，检查会拒绝启动；应暂存预期版本或取消这些变更的暂存，不要为通过检查而暂存无关工作。普通未暂存编辑仍受支持。检查后再暂存也会改变指纹，需要重新检查。
 
-Codex 的审查使用只读 shell 沙箱，非 Git 目录的计划审查受支持；但现有 MCP 配置可能具有外部写入能力，必须先检查。Claude 审查仅开放文件读取和搜索工具，并禁用自定义项及 MCP。两者边界不同，详见运行时参考。委派实现使用受限权限，并要求干净的 Git 基线；工作树用于隔离差异，本身不是安全沙箱。
+Codex 的审查使用只读 shell 沙箱，并忽略用户 `config.toml`、禁用网页搜索；用户配置中的 MCP 工具不会传给审查者。非 Git 目录的计划审查仍受支持。Claude 审查仅开放文件读取和搜索工具，并禁用自定义项及 MCP。两者边界不同，详见运行时参考。委派实现使用受限权限，并要求干净的 Git 基线；工作树用于隔离差异，本身不是安全沙箱。
 
 服务中断时，按 [备用审查协议](skills/claudex-loop/references/fallback.md) 保留已完成轮次，再由用户选择等待、切换或跳过。可选的标准库 API 适配器支持明确选择的环境配置和认证／付款失败链。它只接收计划及可选历史，没有仓库或工具访问权限；只有明确接受 `--allow-limited-review` 后，其批准才能用于实现，且不能替代最终代码检查。远程 API 可能单独计费；调用前必须授权要发送的内容和端点。429 本身不能证明额度耗尽。
 
