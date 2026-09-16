@@ -1,6 +1,7 @@
 ---
 name: claudex-loop
 description: "Harden a plan with independent Claude/Codex review, then optionally build and cross-inspect it. Start in either Claude Code or Codex: the host plans and the other provider reviews. Use for claudex this plan, claudex-loop, or the legacy crucible trigger; not for trivial edits."
+argument-hint: "[plan=PATH] [mode=full|review] [rounds=N] [builder=claude|codex] [reviewer_model=ID] [PROOF_CMD=CMD]"
 ---
 
 # Claudex Loop
@@ -18,7 +19,14 @@ Identify the actual host from your runtime, not PATH, installed skills, model-na
 
 Honor `builder=claude|codex`. The inspector is always the other provider. The host remains coordinator even when the other provider builds. To swap the planner, start the conversation in the other host; do not pretend a CLI reviewer is the user's planning conversation.
 
-Model selection is independent of provider roles. Preserve the host's selected model. Map `reviewer_model`, `builder_model`, or `inspector_model` to the runner's `--model` for that invocation. Apply an explicit `*_effort` similarly. Codex reviews and inspections ignore user configuration, including configured model/effort defaults; pass these explicitly to preserve a specific choice. Omitted values use the CLI's built-in defaults. Builds and Claude calls retain their normal configuration. Fable 5.1 and GPT-6 Astra are suitable explicit choices, not mandatory pins. A model in the host UI does not prove which model a separate CLI will use. Report requested and observed model information separately; report an unresolved CLI default honestly. Never silently fall back to another model/provider on a failure.
+Model selection is independent of provider roles:
+
+- Preserve the host's selected model. A model in the host UI does not prove which model a separate CLI will use.
+- Map `reviewer_model`, `builder_model`, or `inspector_model` to the runner's `--model` for that invocation, and an explicit `*_effort` to `--effort`.
+- Codex reviews and inspections ignore user configuration, including configured model/effort defaults: pass every explicit model or effort choice through to preserve it; each omitted value independently uses the CLI's built-in default. Builds and Claude calls retain their normal configuration.
+- Fable 5.1 and GPT-6 Astra are suitable explicit choices, not mandatory pins.
+- Report requested and observed model information separately; report an unresolved CLI default honestly.
+- Never silently fall back to another model/provider on a failure.
 
 Read [the runtime reference](references/runtime.md) before launching a CLI. Resolve its runner relative to this installed SKILL.md, never relative to the project being reviewed. Use absolute paths when launching it.
 
@@ -37,6 +45,15 @@ If the user supplies `codex_cli` or `claude_cli`, map the selected provider's ex
 | `inspect` | `on` | `off` only when the user explicitly opts out; record it |
 | `MAX_FIX_ROUNDS` | `2` | Bounded build-fix attempts before reporting or taking over |
 | `MAX_INSPECTION_ROUNDS` | `2` | Initial inspection plus one after fixes |
+| `PROOF_CMD` | from plan/repo | Agreed verification command; the runner's `--proof` for delegated builds |
+| `reviewer_model` / `builder_model` / `inspector_model`, `*_effort` | CLI default | Per-role model and effort overrides |
+
+Arguments are free-text `key=value` pairs, for example:
+
+```text
+claudex this plan mode=review plan=docs/migration.md rounds=3
+claudex this feature builder=codex reviewer_model=gpt-6-astra reviewer_effort=high
+```
 
 Echo roles, paths, round limits, requested models and inspection opt-out before starting. Preserve existing authorization: a request to plan does not authorize building; a request to plan and implement does. Do authorized preparation before seeking any remaining sign-off.
 
@@ -52,7 +69,7 @@ Present one assumptions ledger with source paths or research links. Ask for corr
 
 Maintain a short visible decision map. Ask only about unresolved decisions that change the outcome. For each consequential question, give the recommendation, why it matters, and the cost of guessing wrong. Batch independent questions; ask dependent ones sequentially. If the code can answer, inspect it instead. Offer “accept all remaining recommendations” when a long decision list would slow the user down.
 
-Respect existing glossary definitions; resolve ambiguous domain language. Maintain glossary-only context lazily using [CONTEXT-FORMAT.md](CONTEXT-FORMAT.md). Record an ADR only for expensive-to-reverse, non-obvious trade-offs using [ADR-FORMAT.md](ADR-FORMAT.md).
+Respect existing glossary definitions; resolve ambiguous domain language. Maintain glossary-only context lazily using [CONTEXT-FORMAT.md](references/CONTEXT-FORMAT.md). Record an ADR only for expensive-to-reverse, non-obvious trade-offs using [ADR-FORMAT.md](references/ADR-FORMAT.md).
 
 Write the resolved `PLAN_FILE` with:
 - Goal and observable acceptance criteria.
