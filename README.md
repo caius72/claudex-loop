@@ -150,9 +150,10 @@ Codex reviews use the read-only shell sandbox and ignore the user's `config.toml
 python -m pip install -r requirements-dev.txt
 python scripts/validate.py
 python -m unittest discover -s tests -v
+python scripts/privacy_check.py
 ```
 
-CI runs on Windows, macOS and Linux. Tests cover host routing, both result formats, resumed-session identity, malformed/empty/failed responses, timeout handling, approval invalidation, complete change manifests, and build resumption. Tests use disposable Git repositories and fake CLI processes, without model quota. Live CLI smoke-test results are recorded in [VALIDATION.md](VALIDATION.md).
+CI runs on Windows, macOS and Linux. A separate security workflow runs on pull requests, pushes to `main` and weekly: gitleaks scans the full Git history and working tree for secrets; `scripts/privacy_check.py` rejects committed run diagnostics, loop logs, credential files, home-directory paths and real email addresses; bandit and pip-audit check the Python code and dependencies; zizmor audits the workflows. Actions are pinned to commit SHAs and kept current by Dependabot. Tests cover host routing, both result formats, resumed-session identity, malformed/empty/failed responses, timeout handling, approval invalidation, complete change manifests, and build resumption. Tests use disposable Git repositories and fake CLI processes, without model quota. Live CLI smoke-test results are recorded in [VALIDATION.md](VALIDATION.md).
 
 When a reviewer is unavailable, the [fallback protocol](skills/claudex-loop/references/fallback.md) preserves completed rounds and offers wait, an explicitly selected text-only reviewer, or an explicitly unreviewed build. The optional API adapter supports named environment profiles and explicit authentication/payment fallback chains. Limited-context approval requires `--allow-limited-review`; it cannot replace final code inspection. A local quota reader reports cached Codex windows without a model call. Fallback tests use a loopback HTTP server, require local socket access, and make no paid requests.
 
