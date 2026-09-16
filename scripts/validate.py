@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def validate(root=ROOT):
     errors = []
-    for path in sorted((root / "skills").glob("*/SKILL.md")):
+    for path in sorted([*(root / "skills").glob("*/SKILL.md"), *(root / "legacy").glob("*/SKILL.md")]):
         text = path.read_text(encoding="utf-8")
         try:
             if not text.startswith("---\n"):
@@ -33,13 +33,17 @@ def validate(root=ROOT):
             target = link.split("#", 1)[0]
             if target and not (path.parent / target).exists():
                 errors.append(f"{path.relative_to(root)}: missing reference {link}")
+    versions = set()
     for folder in (".claude-plugin", ".codex-plugin"):
         try:
             manifest = json.loads((root / folder / "plugin.json").read_text(encoding="utf-8"))
             if manifest.get("name") != "claudex-loop" or not manifest.get("version"):
                 errors.append(f"{folder}: missing name/version")
+            versions.add(manifest.get("version"))
         except (OSError, ValueError) as exc:
             errors.append(f"{folder}: {exc}")
+    if len(versions) > 1:
+        errors.append(f"Plugin manifest versions differ: {sorted(map(str, versions))}")
     marketplace = json.loads((root / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
     if marketplace["plugins"][0]["name"] != "claudex-loop":
         errors.append("Claude marketplace plugin name mismatch")

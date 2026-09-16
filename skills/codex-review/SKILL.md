@@ -1,6 +1,7 @@
 ---
 name: codex-review
 description: "Have Codex independently review an existing implementation plan while Claude coordinates a bounded revision loop. For automatic reviewer selection from either host, use claudex-loop with mode=review."
+disable-model-invocation: true
 ---
 
 # Codex Review
