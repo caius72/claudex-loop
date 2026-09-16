@@ -7,6 +7,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from privacy_check import scan
 
+EMAIL = "jane.doe" + "@corp.io"
+
 
 class PrivacyCheckTest(unittest.TestCase):
     def check(self, files):
@@ -21,11 +23,12 @@ class PrivacyCheckTest(unittest.TestCase):
             "runs/result.json": "{}",
             "config/.env": "X=1",
             "deploy.pem": "x",
-            "notes.md": "see /Users/alice/work\nC:\\Users\\bob\\x\nmail jane.doe@corp.io",
+            # Assembled at runtime so this file does not trip the privacy gate itself.
+            "notes.md": "see /Users" + "/alice/work\nC:\\Users" + "\\bob\\x\nmail " + EMAIL,
         })
         joined = "\n".join(errors)
         for expected in ("result.json: run diagnostics", ".env: credential", "deploy.pem: credential",
-                         "notes.md:1: absolute home", "notes.md:2: absolute home", "jane.doe@corp.io"):
+                         "notes.md:1: absolute home", "notes.md:2: absolute home", EMAIL):
             self.assertIn(expected, joined)
 
     def test_allows_placeholders(self):
